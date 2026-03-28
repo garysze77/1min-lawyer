@@ -56,6 +56,8 @@ export default function OneMinuteLawyer() {
   const [questionId, setQuestionId] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [questionText, setQuestionText] = useState('');
+  const [charCount, setCharCount] = useState(0);
 
   const getCategoryTitle = (id: string) => {
     const cat = CATEGORIES.find(c => c.id === id);
@@ -284,16 +286,15 @@ export default function OneMinuteLawyer() {
                 id="questionInput"
                 inputMode="text"
                 autoComplete="off"
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  const counter = document.getElementById('charCounter');
-                  if (counter) counter.textContent = `${target.value.length}/1000`;
-                  const btn = document.getElementById('submitBtn') as HTMLButtonElement;
-                  if (btn) btn.disabled = target.value.trim().length < 10;
+                value={questionText}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setQuestionText(val);
+                  setCharCount(val.length);
                 }}
               />
               <div className="flex justify-end mt-2">
-                <span id="charCounter" className="text-xs text-gray-400">0/1000</span>
+                <span className="text-xs text-gray-400">{charCount}/1000</span>
               </div>
             </div>
 
@@ -310,15 +311,21 @@ export default function OneMinuteLawyer() {
             {/* Submit Button */}
             <button
               id="submitBtn"
-              disabled={true}
               onClick={() => {
-                const input = document.getElementById('questionInput') as HTMLTextAreaElement;
-                if (input?.value.trim().length >= 10) {
-                  handleQuestionSubmit(input.value.trim());
+                console.log('Submit button clicked, questionText length:', questionText.trim().length);
+                if (questionText.trim().length >= 10) {
+                  console.log('Submitting question...');
+                  handleQuestionSubmit(questionText.trim());
+                } else {
+                  console.log('Question too short:', questionText.trim().length);
                 }
               }}
-              className="w-full py-4 bg-blue-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-semibold text-lg
-                       hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200 disabled:shadow-none"
+              onTouchStart={() => {
+                console.log('Submit button touch start');
+              }}
+              className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg
+                       hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200
+                       cursor-pointer"
             >
               提交問題
             </button>
