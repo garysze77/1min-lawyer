@@ -45,8 +45,11 @@ export default function QuestionInput({
           placeholder="例如：我同男朋友分手，佢要我搬走，但我已經係呢度住咗兩年，請問我是否有權繼續住？"
           className="w-full h-40 p-4 bg-gray-50 rounded-xl border border-gray-200 
                    focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none
-                   text-gray-700 placeholder-gray-400 resize-none transition-all"
+                   text-gray-700 placeholder-gray-400 resize-none transition-all
+                   touch-action-manipulation"
           maxLength={1000}
+          inputMode="text"
+          autoComplete="off"
         />
         <div className="flex justify-between items-center mt-3">
           <span className="text-xs text-gray-400">
