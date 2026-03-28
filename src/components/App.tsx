@@ -99,8 +99,9 @@ export default function OneMinuteLawyer() {
         throw new Error(data.error || 'Failed to submit question');
       }
 
+      console.log('API response:', JSON.stringify(data, null, 2));
       setQuestionId(data.data.id);
-      setAiResult(data.data.ai_response);
+      setAiResult(data.data.ai_response.data);
       setStep('result');
     } catch (err) {
       console.error('Error submitting question:', err);
