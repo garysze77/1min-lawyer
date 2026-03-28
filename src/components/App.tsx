@@ -79,12 +79,12 @@ export default function OneMinuteLawyer() {
     setStep('loading');
     setError(null);
 
-    // 30-second timeout controller
+    // 60-second timeout controller
     const timeoutId = setTimeout(() => {
       setError('AI 分析時間過長，請稍後再試。如問題緊急，建議直接聯絡律師。');
       setStep('result');
       setIsLoading(false);
-    }, 30000);
+    }, 60000);
 
     try {
       // Call the API to submit question and get AI analysis
@@ -366,7 +366,7 @@ export default function OneMinuteLawyer() {
               <p className="text-gray-500">正在分析你的問題，通常需要 10-20 秒</p>
             </div>
             <div className="bg-blue-50 rounded-xl px-4 py-2">
-              <p className="text-sm text-blue-600">⚠️ 如等待超過 30 秒，將自動提示錯誤</p>
+              <p className="text-sm text-blue-600">⚠️ 如等待超過 1 分鐘，將自動提示錯誤</p>
             </div>
           </div>
         )}

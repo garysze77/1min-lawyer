@@ -9,7 +9,15 @@ const MAX_CONTACT_LENGTH = 100
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '5647841505'
 
+console.log('[TG Notification] Env check:', {
+  hasBotToken: !!TELEGRAM_BOT_TOKEN,
+  botTokenPrefix: TELEGRAM_BOT_TOKEN ? TELEGRAM_BOT_TOKEN.substring(0, 10) + '...' : 'undefined',
+  adminChatId: TELEGRAM_ADMIN_CHAT_ID,
+})
+
 async function sendTelegramNotification(name: string, contact: string, question?: string) {
+  console.log('[TG Notification] sendTelegramNotification called with:', { name, contact, hasQuestion: !!question })
+  
   let message = `🔔 律師轉介查詢\n\n👤 姓名: ${name}\n📞 聯絡: ${contact}`
   
   if (question) {
@@ -19,7 +27,8 @@ async function sendTelegramNotification(name: string, contact: string, question?
   message += `\n\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
   
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    console.log('[TG Notification] Sending request to Telegram API...')
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -28,6 +37,11 @@ async function sendTelegramNotification(name: string, contact: string, question?
         parse_mode: 'HTML',
       }),
     })
+    const responseData = await response.json()
+    console.log('[TG Notification] Response:', responseData)
+    if (!response.ok) {
+      console.error('[TG Notification] API returned error:', responseData)
+    }
   } catch (error) {
     console.error('Telegram notification failed:', error)
   }
@@ -112,6 +126,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send Telegram notification (non-blocking)
+    console.log('[TG Notification] Calling sendTelegramNotification...')
     sendTelegramNotification(name.trim(), trimmedContact, questionText)
 
     return NextResponse.json({
