@@ -9,17 +9,27 @@ const MAX_CONTACT_LENGTH = 100
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '5647841505'
 
+// Log env var status at module load time (helps debug missing vars)
+console.log('[Referral API] TG bot token:', TELEGRAM_BOT_TOKEN ? `SET (${TELEGRAM_BOT_TOKEN.slice(0, 8)}...)` : 'NOT SET')
+console.log('[Referral API] TG admin chat ID:', TELEGRAM_ADMIN_CHAT_ID || 'NOT SET')
+
 async function sendTelegramNotification(name: string, contact: string, question?: string) {
+  // Defensive: skip if bot token is not configured
+  if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === 'your-telegram-bot-token') {
+    console.warn('[TG Notification] Bot token not configured, skipping notification')
+    return
+  }
+
   let message = `🔔 律師轉介查詢\n\n👤 姓名: ${name}\n📞 聯絡: ${contact}`
-  
+
   if (question) {
     message += `\n\n❓ 咨詢內容:\n${question}`
   }
-  
+
   message += `\n\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
-  
+
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -28,8 +38,15 @@ async function sendTelegramNotification(name: string, contact: string, question?
         parse_mode: 'HTML',
       }),
     })
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      console.error(`[TG Notification] HTTP ${response.status}: ${errorBody}`)
+    } else {
+      console.log('[TG Notification] Sent successfully')
+    }
   } catch (error) {
-    console.error('Telegram notification failed:', error)
+    console.error('[TG Notification] Failed:', error)
   }
 }
 
@@ -112,6 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send Telegram notification (non-blocking)
+    console.log(`[Referral API] Notifying TG - name=${name.trim()}, contact=${trimmedContact}, question_id=${question_id ?? 'none'}, questionText=${questionText ? 'present' : 'none'}`)
     sendTelegramNotification(name.trim(), trimmedContact, questionText)
 
     return NextResponse.json({
