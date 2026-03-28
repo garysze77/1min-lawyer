@@ -9,8 +9,14 @@ const MAX_CONTACT_LENGTH = 100
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '5647841505'
 
-async function sendTelegramNotification(name: string, contact: string) {
-  const message = `🔔 律師轉介查詢\n\n👤 姓名: ${name}\n📞 聯絡: ${contact}\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
+async function sendTelegramNotification(name: string, contact: string, question?: string) {
+  let message = `🔔 律師轉介查詢\n\n👤 姓名: ${name}\n📞 聯絡: ${contact}`
+  
+  if (question) {
+    message += `\n\n❓ 咨詢內容:\n${question}`
+  }
+  
+  message += `\n\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
   
   try {
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -76,6 +82,17 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
 
+    // Fetch question text if question_id is provided
+    let questionText: string | undefined
+    if (question_id) {
+      const { data: questionData } = await supabase
+        .from('questions')
+        .select('question_text')
+        .eq('id', question_id)
+        .single()
+      questionText = questionData?.question_text
+    }
+
     const { data, error } = await supabase
       .from('referrals')
       .insert({
@@ -95,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send Telegram notification (non-blocking)
-    sendTelegramNotification(name.trim(), trimmedContact)
+    sendTelegramNotification(name.trim(), trimmedContact, questionText)
 
     return NextResponse.json({
       success: true,
