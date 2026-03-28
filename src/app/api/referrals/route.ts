@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase'
 const MAX_NAME_LENGTH = 100
 const MAX_CONTACT_LENGTH = 100
 
-// Telegram notification
-const TELEGRAM_BOT_TOKEN = '8659268392:AAERHM-ygIPU4qw9RvRLP4BNvBLsuDTrlJw'
-const TELEGRAM_ADMIN_CHAT_ID = '5647841505'
+// Telegram notification (from environment variables)
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '5647841505'
 
 async function sendTelegramNotification(name: string, contact: string) {
   const message = `🔔 律師轉介查詢\n\n👤 姓名: ${name}\n📞 聯絡: ${contact}\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
