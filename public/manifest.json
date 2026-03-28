@@ -1,0 +1,37 @@
+{
+  "name": "1分鐘律師 | 1 Minute Lawyer",
+  "short_name": "1分鐘律師",
+  "description": "AI-powered legal question triage with lawyer referral for Hong Kong residents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563EB",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "zh-Hant",
+  "categories": ["legal", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "新諮詢",
+      "short_name": "新諮詢",
+      "description": "開始新的法律諮詢",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
