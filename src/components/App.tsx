@@ -79,6 +79,13 @@ export default function OneMinuteLawyer() {
     setStep('loading');
     setError(null);
 
+    // 30-second timeout controller
+    const timeoutId = setTimeout(() => {
+      setError('AI 分析時間過長，請稍後再試。如問題緊急，建議直接聯絡律師。');
+      setStep('result');
+      setIsLoading(false);
+    }, 30000);
+
     try {
       // Call the API to submit question and get AI analysis
       const response = await fetch('/api/questions', {
@@ -93,6 +100,8 @@ export default function OneMinuteLawyer() {
         }),
       });
 
+      clearTimeout(timeoutId);
+
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -104,6 +113,7 @@ export default function OneMinuteLawyer() {
       setAiResult(data.data.ai_response.data);
       setStep('result');
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('Error submitting question:', err);
       setError(err instanceof Error ? err.message : '提交問題時發生錯誤');
       setStep('result');
@@ -352,8 +362,11 @@ export default function OneMinuteLawyer() {
               </div>
             </div>
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-semibold text-gray-800">AI 分析中...</h3>
-              <p className="text-gray-500">請稍候，我們正在分析你的問題</p>
+              <h3 className="text-xl font-semibold text-gray-800">AI 分析中，請稍候...</h3>
+              <p className="text-gray-500">正在分析你的問題，通常需要 10-20 秒</p>
+            </div>
+            <div className="bg-blue-50 rounded-xl px-4 py-2">
+              <p className="text-sm text-blue-600">⚠️ 如等待超過 30 秒，將自動提示錯誤</p>
             </div>
           </div>
         )}
@@ -389,7 +402,7 @@ export default function OneMinuteLawyer() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-800">AI 分析結果</h3>
-                  <p className="text-xs text-gray-400">Powered by MiniMax</p>
+                  <p className="text-xs text-gray-400">AI 智能分析</p>
                 </div>
               </div>
 

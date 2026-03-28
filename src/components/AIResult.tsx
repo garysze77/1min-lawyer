@@ -38,7 +38,7 @@ export default function AIResult({ analysis, onRequestReferral, onBack }: AIResu
           </div>
           <div>
             <h3 className="font-semibold text-gray-800">AI 分析結果</h3>
-            <p className="text-xs text-gray-400">Powered by MiniMax</p>
+            <p className="text-xs text-gray-400">AI 智能分析</p>
           </div>
         </div>
 
