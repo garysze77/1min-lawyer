@@ -8,6 +8,42 @@ interface AnalysisRequest {
   question_text: string;
 }
 
+// --- Rate Limiting ---
+// 20 requests per IP per 60 seconds to prevent billing attacks
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+
+const kv = await Deno.openKv();
+const headers = { 'Content-Type': 'application/json' };
+
+async function isRateLimited(ip: string): Promise<boolean> {
+  const key = ['ratelimit', ip];
+  const result = await kv.get<{ count: number; resetAt: number }>(key);
+  const now = Date.now();
+
+  if (!result.value || now > result.value.resetAt) {
+    await kv.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  if (result.value.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return true;
+  }
+
+  await kv.set(key, { count: result.value.count + 1, resetAt: result.value.resetAt });
+  return false;
+}
+
+function getClientIp(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? req.headers.get('cf-connecting-ip')?.trim()
+    ?? 'unknown';
+}
+
+// --- Input Validation Constants ---
+const MAX_QUESTION_TEXT_LENGTH = 2000;
+const MAX_SUBCATEGORY_LENGTH = 100;
+
 // Prompts for different legal categories
 const CATEGORY_PROMPTS: Record<string, { context: string; laws: string[] }> = {
   family: {
@@ -40,12 +76,43 @@ const DISCLAIMER = '此為AI分析，不構成法律意見。如有需要，請�
 
 Deno.serve(async (req) => {
   try {
+    // Rate limiting
+    const clientIp = getClientIp(req);
+    if (await isRateLimited(clientIp)) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please wait a moment and try again.' }),
+        { status: 429, headers }
+      );
+    }
+
     const { question_id, category, subcategory, question_text }: AnalysisRequest = await req.json();
 
+    // Input validation
     if (!category || !subcategory || !question_text) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: category, subcategory, question_text' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers }
+      );
+    }
+
+    if (typeof question_text !== 'string' || question_text.length === 0 || question_text.length > MAX_QUESTION_TEXT_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `question_text must be 1-${MAX_QUESTION_TEXT_LENGTH} characters` }),
+        { status: 400, headers }
+      );
+    }
+
+    if (typeof subcategory !== 'string' || subcategory.length === 0 || subcategory.length > MAX_SUBCATEGORY_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `subcategory must be 1-${MAX_SUBCATEGORY_LENGTH} characters` }),
+        { status: 400, headers }
+      );
+    }
+
+    if (category !== 'general' && !CATEGORY_PROMPTS[category]) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid category' }),
+        { status: 400, headers }
       );
     }
 

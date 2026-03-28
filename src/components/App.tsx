@@ -281,7 +281,17 @@ export default function OneMinuteLawyer() {
                          text-gray-700 placeholder-gray-400 resize-none transition-all"
                 maxLength={1000}
                 id="questionInput"
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  const counter = document.getElementById('charCounter');
+                  if (counter) counter.textContent = `${target.value.length}/1000`;
+                  const btn = document.getElementById('submitBtn') as HTMLButtonElement;
+                  if (btn) btn.disabled = target.value.trim().length < 10;
+                }}
               />
+              <div className="flex justify-end mt-2">
+                <span id="charCounter" className="text-xs text-gray-400">0/1000</span>
+              </div>
             </div>
 
             {/* Tips Card */}
@@ -296,14 +306,16 @@ export default function OneMinuteLawyer() {
 
             {/* Submit Button */}
             <button
+              id="submitBtn"
+              disabled={true}
               onClick={() => {
                 const input = document.getElementById('questionInput') as HTMLTextAreaElement;
                 if (input?.value.trim().length >= 10) {
                   handleQuestionSubmit(input.value.trim());
                 }
               }}
-              className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg
-                       hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200"
+              className="w-full py-4 bg-blue-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl font-semibold text-lg
+                       hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-200 disabled:shadow-none"
             >
               提交問題
             </button>

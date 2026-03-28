@@ -1,14 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 
+// Rate limiting: simple in-memory Map (resets on server restart)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+
+function getRateLimitInfo(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS })
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 }
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0 }
+  }
+
+  entry.count++
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count }
+}
+
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+    const rateLimitInfo = getRateLimitInfo(ip)
+
+    if (!rateLimitInfo.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const { category, subcategory, question_text } = body
 
     if (!category || !subcategory || !question_text) {
       return NextResponse.json(
         { error: 'Missing required fields: category, subcategory, question_text' },
+        { status: 400 }
+      )
+    }
+
+    // Validate question_text length
+    if (typeof question_text !== 'string' || question_text.length > 2000) {
+      return NextResponse.json(
+        { error: 'question_text must be at most 2000 characters' },
         { status: 400 }
       )
     }
@@ -50,9 +94,19 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    if (!aiResponse.ok) {
+    if (aiResponse.ok) {
+      try {
+        const aiData = await aiResponse.json()
+        // Update the record with the AI response
+        await supabase
+          .from('questions')
+          .update({ ai_response: aiData })
+          .eq('id', data.id)
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError)
+      }
+    } else {
       console.error('AI analysis failed:', await aiResponse.text())
-      // Still return the question ID, AI response will be null
     }
 
     // Fetch updated record with AI response
@@ -82,6 +136,14 @@ export async function GET(request: NextRequest) {
   if (!id) {
     return NextResponse.json(
       { error: 'Question ID is required' },
+      { status: 400 }
+    )
+  }
+
+  // Validate UUID format
+  if (!UUID_REGEX.test(id)) {
+    return NextResponse.json(
+      { error: 'Invalid question ID format' },
       { status: 400 }
     )
   }

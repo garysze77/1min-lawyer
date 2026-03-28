@@ -42,9 +42,7 @@ ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can insert referrals" ON referrals
   FOR INSERT WITH CHECK (true);
 
--- Policy: Anyone can view referrals (for admin purposes)
-CREATE POLICY "Anyone can view referrals" ON referrals
-  FOR SELECT USING (true);
+
 
 -- Index for faster queries
 CREATE INDEX IF NOT EXISTS idx_questions_created_at ON questions(created_at DESC);
