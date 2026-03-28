@@ -116,7 +116,7 @@ export default function OneMinuteLawyer() {
     setStep('referral');
   };
 
-  const handleReferralSubmit = async (data: { name: string; contact: string; preferred_lawyer: string }) => {
+  const handleReferralSubmit = async (data: { name: string; contact: string }) => {
     try {
       const response = await fetch('/api/referrals', {
         method: 'POST',
@@ -487,39 +487,25 @@ export default function OneMinuteLawyer() {
               <p className="text-gray-500 text-sm">填寫以下資料，我們會盡快為你聯繫</p>
             </div>
 
-            {/* Lawyer Selection */}
+            {/* Declaration */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-              <label className="block text-gray-700 font-medium mb-3">
-                選擇你想咨詢的律師 <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-3" id="lawyerSelection">
-                {LAWYERS.map((lawyer) => (
-                  <button
-                    key={lawyer.id}
-                    onClick={(e) => {
-                      const btns = document.querySelectorAll('#lawyerSelection button');
-                      btns.forEach(b => {
-                        b.classList.remove('border-blue-500', 'bg-blue-50');
-                        b.classList.add('border-gray-100');
-                      });
-                      (e.currentTarget as HTMLElement)?.classList.add('border-blue-500', 'bg-blue-50');
-                      (e.currentTarget as HTMLElement)?.classList.remove('border-gray-100');
-                    }}
-                    className="w-full p-4 rounded-xl border-2 border-gray-100 transition-all duration-200 text-left"
-                    data-lawyer-id={lawyer.id}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center font-semibold text-white">
-                        {lawyer.name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">{lawyer.name}</p>
-                        <p className="text-xs text-gray-500">{lawyer.specialization}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+              <h3 className="text-gray-700 font-semibold mb-3">聲明及注意事項</h3>
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-2 mb-4">
+                <p>• 本服務為免費法律諮詢轉介，不保證成功配對律師</p>
+                <p>• 我們只會使用所提供的聯絡資料就此事宜聯絡你</p>
+                <p>• 你的資料不會用於任何其他用途或轉交第三方</p>
+                <p>• 如有需要，請自行決定是否聘請律師</p>
               </div>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="referralAgree"
+                  className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-gray-600 text-sm">
+                  我已閱讀並同意上述聲明（細則以英文版為準）
+                </span>
+              </label>
             </div>
 
             {/* Contact Form */}
@@ -561,13 +547,12 @@ export default function OneMinuteLawyer() {
               onClick={() => {
                 const nameInput = document.getElementById('referralName') as HTMLInputElement;
                 const contactInput = document.getElementById('referralContact') as HTMLInputElement;
-                const selectedLawyer = document.querySelector('#lawyerSelection button.border-blue-500');
+                const agreeCheckbox = document.getElementById('referralAgree') as HTMLInputElement;
                 
-                if (nameInput?.value && contactInput?.value && selectedLawyer) {
+                if (nameInput?.value && contactInput?.value && agreeCheckbox?.checked) {
                   handleReferralSubmit({
                     name: nameInput.value,
                     contact: contactInput.value,
-                    preferred_lawyer: selectedLawyer.getAttribute('data-lawyer-id') || '',
                   });
                 }
               }}

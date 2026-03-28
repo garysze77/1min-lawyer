@@ -2,37 +2,28 @@
 
 import { useState } from 'react';
 
-interface Lawyer {
-  id: string;
-  name: string;
-  specialization: string;
-  contact: string;
-}
-
 interface LawyerReferralFormProps {
-  lawyers: Lawyer[];
-  onSubmit: (data: { name: string; contact: string; preferred_lawyer: string }) => void;
+  onSubmit: (data: { name: string; contact: string }) => void;
   onBack: () => void;
   isLoading?: boolean;
 }
 
 export default function LawyerReferralForm({ 
-  lawyers, 
   onSubmit,
   onBack,
   isLoading = false 
 }: LawyerReferralFormProps) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
-  const [preferredLawyer, setPreferredLawyer] = useState('');
+  const [agreed, setAgreed] = useState(false);
 
   const handleSubmit = () => {
-    if (name.trim() && contact.trim() && preferredLawyer) {
-      onSubmit({ name: name.trim(), contact: contact.trim(), preferred_lawyer: preferredLawyer });
+    if (name.trim() && contact.trim() && agreed) {
+      onSubmit({ name: name.trim(), contact: contact.trim() });
     }
   };
 
-  const isValid = name.trim().length >= 2 && contact.trim().length >= 8 && preferredLawyer;
+  const isValid = name.trim().length >= 2 && contact.trim().length >= 8 && agreed;
 
   return (
     <div className="space-y-5">
@@ -52,40 +43,26 @@ export default function LawyerReferralForm({
         <p className="text-gray-500 text-sm">填寫以下資料，我們會盡快為你聯繫</p>
       </div>
 
-      {/* Lawyer Selection */}
+      {/* Declaration */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <label className="block text-gray-700 font-medium mb-3">
-          選擇你想咨詢的律師 <span className="text-red-500">*</span>
-        </label>
-        <div className="space-y-3">
-          {lawyers.map((lawyer) => (
-            <button
-              key={lawyer.id}
-              onClick={() => setPreferredLawyer(lawyer.id)}
-              className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left
-                         ${preferredLawyer === lawyer.id 
-                           ? 'border-blue-500 bg-blue-50' 
-                           : 'border-gray-100 hover:border-gray-200 bg-white'
-                         }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white
-                              ${preferredLawyer === lawyer.id ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                  {lawyer.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-800">{lawyer.name}</p>
-                  <p className="text-xs text-gray-500">{lawyer.specialization}</p>
-                </div>
-                {preferredLawyer === lawyer.id && (
-                  <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-            </button>
-          ))}
+        <h3 className="text-gray-700 font-semibold mb-3">聲明及注意事項</h3>
+        <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-2 mb-4">
+          <p>• 本服務為免費法律諮詢轉介，不保證成功配對律師</p>
+          <p>• 我們只會使用所提供的聯絡資料就此事宜聯絡你</p>
+          <p>• 你的資料不會用於任何其他用途或轉交第三方</p>
+          <p>• 如有需要，請自行決定是否聘請律師</p>
         </div>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-gray-600 text-sm">
+            我已閱讀並同意上述聲明（細則以英文版為準）
+          </span>
+        </label>
       </div>
 
       {/* Contact Form */}
