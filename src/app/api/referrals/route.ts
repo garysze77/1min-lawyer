@@ -29,6 +29,7 @@ async function sendTelegramNotification(name: string, contact: string, question?
   message += `\n\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
 
   try {
+    console.log('[TG Notification] Sending request to Telegram API...')
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -39,11 +40,19 @@ async function sendTelegramNotification(name: string, contact: string, question?
       }),
     })
 
+    console.log('[TG Notification] Response status:', response.status)
+
     if (!response.ok) {
       const errorBody = await response.text()
       console.error(`[TG Notification] HTTP ${response.status}: ${errorBody}`)
     } else {
-      console.log('[TG Notification] Sent successfully')
+      const result = await response.json()
+      console.log('[TG Notification] Response body:', JSON.stringify(result))
+      if (!result.ok) {
+        console.error('[TG Notification] TG API error:', result.description)
+      } else {
+        console.log('[TG Notification] Sent successfully, message_id:', result.result?.message_id)
+      }
     }
   } catch (error) {
     console.error('[TG Notification] Failed:', error)
