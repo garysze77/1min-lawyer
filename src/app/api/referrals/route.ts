@@ -8,7 +8,7 @@ const MAX_CONTACT_LENGTH = 100
 // Supabase Edge Function URL for Telegram notifications
 const SUPABASE_EDGE_FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/bright-service`
 
-async function sendTelegramNotification(name: string, contact: string, question?: string) {
+async function sendTelegramNotification(name: string, contact: string, question?: string, aiAnalysis?: string) {
   try {
     console.log('[TG Notification] Calling Supabase Edge Function...')
 
@@ -21,7 +21,7 @@ async function sendTelegramNotification(name: string, contact: string, question?
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
       },
-      body: JSON.stringify({ name, contact, question }),
+      body: JSON.stringify({ name, contact, question, aiAnalysis }),
       signal: controller.signal,
     })
 
@@ -97,15 +97,18 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    // Fetch question text if question_id is provided
+    // Fetch question text and AI analysis if question_id is provided
     let questionText: string | undefined
+    let aiAnalysis: string | undefined
     if (question_id) {
       const { data: questionData } = await supabase
         .from('questions')
-        .select('question_text')
+        .select('question_text, ai_response')
         .eq('id', question_id)
         .single()
       questionText = questionData?.question_text
+      // Extract analysis from ai_response.data.analysis
+      aiAnalysis = questionData?.ai_response?.data?.analysis
     }
 
     const { data, error } = await supabase
@@ -127,8 +130,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Send Telegram notification (non-blocking)
-    console.log(`[Referral API] Notifying TG - name=${name.trim()}, contact=${trimmedContact}, question_id=${question_id ?? 'none'}, questionText=${questionText ? 'present' : 'none'}`)
-    sendTelegramNotification(name.trim(), trimmedContact, questionText)
+    console.log(`[Referral API] Notifying TG - name=${name.trim()}, contact=${trimmedContact}, question_id=${question_id ?? 'none'}, questionText=${questionText ? 'present' : 'none'}, aiAnalysis=${aiAnalysis ? 'present' : 'none'}`)
+    sendTelegramNotification(name.trim(), trimmedContact, questionText, aiAnalysis)
 
     return NextResponse.json({
       success: true,

@@ -1,14 +1,29 @@
 Deno.serve(async (req) => {
-  const { name, contact, question } = await req.json();
+  const { name, contact, question, aiAnalysis } = await req.json();
   
   const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
   const adminChatId = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID')!;
   
-  const message = `🔔 律師轉介查詢
+  let message = `🔔 律師轉介查詢
 
 👤 姓名: ${name}
 📞 聯絡: ${contact}
-❓ 咨詢內容: ${question || 'N/A'}
+❓ 咨詢內容: ${question || 'N/A'}`;
+
+  // Add AI analysis if available
+  if (aiAnalysis) {
+    // Truncate AI analysis if too long (Telegram message limit is 4096 chars)
+    const truncatedAnalysis = aiAnalysis.length > 2000 
+      ? aiAnalysis.substring(0, 2000) + '...\n\n(內容過長，已截斷)' 
+      : aiAnalysis;
+    
+    message += `
+
+🤖 AI 分析摘要:
+${truncatedAnalysis}`;
+  }
+
+  message += `
 ⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`;
   
   const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
