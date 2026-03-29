@@ -6,7 +6,7 @@ const MAX_NAME_LENGTH = 100
 const MAX_CONTACT_LENGTH = 100
 
 // Supabase Edge Function URL for Telegram notifications
-const SUPABASE_EDGE_FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-telegram-notification`
+const SUPABASE_EDGE_FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/bright-service`
 
 async function sendTelegramNotification(name: string, contact: string, question?: string) {
   try {
