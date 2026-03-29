@@ -30,6 +30,10 @@ async function sendTelegramNotification(name: string, contact: string, question?
 
   try {
     console.log('[TG Notification] Sending request to Telegram API...')
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -38,7 +42,10 @@ async function sendTelegramNotification(name: string, contact: string, question?
         text: message,
         parse_mode: 'HTML',
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeout)
 
     console.log('[TG Notification] Response status:', response.status)
 
@@ -54,8 +61,12 @@ async function sendTelegramNotification(name: string, contact: string, question?
         console.log('[TG Notification] Sent successfully, message_id:', result.result?.message_id)
       }
     }
-  } catch (error) {
-    console.error('[TG Notification] Failed:', error)
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('[TG Notification] Request timed out after 10s — Vercel network cannot reach Telegram API')
+    } else {
+      console.error('[TG Notification] Failed:', error)
+    }
   }
 }
 
