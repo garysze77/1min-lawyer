@@ -5,65 +5,37 @@ import { createClient } from '@/lib/supabase'
 const MAX_NAME_LENGTH = 100
 const MAX_CONTACT_LENGTH = 100
 
-// Telegram notification (from environment variables)
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '5647841505'
-
-// Log env var status at module load time (helps debug missing vars)
-console.log('[Referral API] TG bot token:', TELEGRAM_BOT_TOKEN ? `SET (${TELEGRAM_BOT_TOKEN.slice(0, 8)}...)` : 'NOT SET')
-console.log('[Referral API] TG admin chat ID:', TELEGRAM_ADMIN_CHAT_ID || 'NOT SET')
+// Supabase Edge Function URL for Telegram notifications
+const SUPABASE_EDGE_FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-telegram-notification`
 
 async function sendTelegramNotification(name: string, contact: string, question?: string) {
-  // Defensive: skip if bot token is not configured
-  if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN === 'your-telegram-bot-token') {
-    console.warn('[TG Notification] Bot token not configured, skipping notification')
-    return
-  }
-
-  let message = `🔔 律師轉介查詢\n\n👤 姓名: ${name}\n📞 聯絡: ${contact}`
-
-  if (question) {
-    message += `\n\n❓ 咨詢內容:\n${question}`
-  }
-
-  message += `\n\n⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`
-
   try {
-    console.log('[TG Notification] Sending request to Telegram API...')
+    console.log('[TG Notification] Calling Supabase Edge Function...')
 
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 10000)
+    const timeout = setTimeout(() => controller.abort(), 15000)
 
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_ADMIN_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML',
-      }),
+      body: JSON.stringify({ name, contact, question }),
       signal: controller.signal,
     })
 
     clearTimeout(timeout)
 
-    console.log('[TG Notification] Response status:', response.status)
+    console.log('[TG Notification] Edge function response status:', response.status)
 
     if (!response.ok) {
       const errorBody = await response.text()
-      console.error(`[TG Notification] HTTP ${response.status}: ${errorBody}`)
+      console.error(`[TG Notification] Edge function error ${response.status}: ${errorBody}`)
     } else {
       const result = await response.json()
-      console.log('[TG Notification] Response body:', JSON.stringify(result))
-      if (!result.ok) {
-        console.error('[TG Notification] TG API error:', result.description)
-      } else {
-        console.log('[TG Notification] Sent successfully, message_id:', result.result?.message_id)
-      }
+      console.log('[TG Notification] Edge function response:', JSON.stringify(result))
     }
   } catch (error: any) {
     if (error.name === 'AbortError') {
-      console.error('[TG Notification] Request timed out after 10s — Vercel network cannot reach Telegram API')
+      console.error('[TG Notification] Request timed out after 15s')
     } else {
       console.error('[TG Notification] Failed:', error)
     }
