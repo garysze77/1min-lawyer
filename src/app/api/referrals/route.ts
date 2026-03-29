@@ -17,7 +17,10 @@ async function sendTelegramNotification(name: string, contact: string, question?
 
     const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+      },
       body: JSON.stringify({ name, contact, question }),
       signal: controller.signal,
     })
