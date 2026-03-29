@@ -5,53 +5,36 @@ import { createBrowserClient } from '@supabase/ssr'
 const MAX_NAME_LENGTH = 100
 const MAX_CONTACT_LENGTH = 100
 
-// Telegram Bot Token and Admin Chat ID
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
-const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID!
+// Supabase Edge Function URL for Telegram notifications
+const SUPABASE_EDGE_FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/bright-service`
 
 async function sendTelegramNotification(name: string, contact: string, question?: string, aiAnalysis?: string) {
   try {
-    console.log('[TG Notification] Calling Telegram API directly...')
-
-    let message = `🔔 律師轉介查詢
-
-👤 姓名: ${name}
-📞 聯絡: ${contact}
-❓ 咨詢內容: ${question || 'N/A'}`;
-
-    if (aiAnalysis) {
-      const truncatedAnalysis = aiAnalysis.length > 2000
-        ? aiAnalysis.substring(0, 2000) + '...\n\n(內容過長，已截斷)'
-        : aiAnalysis;
-      message += `
-
-🤖 AI 分析摘要:
-${truncatedAnalysis}`;
-    }
-
-    message += `
-⏰ 時間: ${new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })}`;
+    console.log('[TG Notification] Calling Supabase Edge Function...')
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000)
 
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(SUPABASE_EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_ADMIN_CHAT_ID, text: message }),
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ name, contact, question, aiAnalysis }),
       signal: controller.signal,
     })
 
     clearTimeout(timeout)
 
-    console.log('[TG Notification] Telegram response status:', response.status)
+    console.log('[TG Notification] Edge function response status:', response.status)
 
     if (!response.ok) {
       const errorBody = await response.text()
-      console.error(`[TG Notification] Telegram error ${response.status}: ${errorBody}`)
+      console.error(`[TG Notification] Edge function error ${response.status}: ${errorBody}`)
     } else {
       const result = await response.json()
-      console.log('[TG Notification] Telegram response:', JSON.stringify(result))
+      console.log('[TG Notification] Edge function response:', JSON.stringify(result))
     }
   } catch (error: any) {
     if (error.name === 'AbortError') {
